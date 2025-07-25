@@ -2,6 +2,7 @@ import { Navbar } from "@/components/navbar"
 import { ProductCard } from "@/components/product-card"
 import { Button } from "@/components/button"
 import { ArrowRight, Truck, Shield, Headphones } from "lucide-react"
+import "./globals.css"
 
 // Datos de ejemplo
 const featuredProducts = [
