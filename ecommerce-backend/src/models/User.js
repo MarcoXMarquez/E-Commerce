@@ -1,5 +1,9 @@
 import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+
 const prisma = new PrismaClient();
+const jwtSecret = process.env.JWT_SECRET
 
 // Hashea la contraseña antes de guardar (debes llamar a esta función manualmente)
 const hashPassword = async (password) => {
@@ -45,4 +49,17 @@ export const findUserById = async (id) => {
       role: true
     }
   });
+};
+// Nueva función para generar token JWT
+export const generateAuthToken = (userId, role) => {
+  return jwt.sign(
+    { id: userId, role },
+    jwtSecret,
+    { expiresIn: process.env.JWT_EXPIRES_IN }
+  );
+};
+
+// Nueva función para verificar token
+export const verifyToken = (token) => {
+  return jwt.verify(token, jwtSecret);
 };

@@ -6,21 +6,24 @@ import { useState } from "react"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, Chrome } from "lucide-react"
 import { Button } from "@/components/button"
+interface LoginFormProps {
+  onFormSubmit: (email: string, password: string) => Promise<void>;
+  onGoogleLogin: () => void;
+}
 
-export function LoginForm() {
+export function LoginForm({ onFormSubmit, onGoogleLogin }: LoginFormProps) {
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState<{ [key: string]: string }>({})
+    email: '',
+    password: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-  }
-
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -30,48 +33,42 @@ export function LoginForm() {
       setErrors((prev) => ({ ...prev, [name]: "" }))
     }
   }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    // Validation
-    const newErrors: { [key: string]: string } = {}
-
-    if (!formData.email) {
-      newErrors.email = "El email es requerido"
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = "Ingresa un email válido"
-    }
-
-    if (!formData.password) {
-      newErrors.password = "La contraseña es requerida"
-    } else if (formData.password.length < 6) {
-      newErrors.password = "La contraseña debe tener al menos 6 caracteres"
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      setIsLoading(false)
-      return
-    }
-
-    // Simulate API call
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      console.log("Login successful:", formData)
-      // Redirect logic here
-    } catch (error) {
-      console.error("Login failed:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleGoogleLogin = () => {
+    const handleGoogleLogin = () => {
     console.log("Google OAuth login")
     // Google OAuth logic here
   }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    // Validación (se mantiene igual)
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.email) {
+      newErrors.email = "El email es requerido";
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = "Ingresa un email válido";
+    }
+
+    if (!formData.password) {
+      newErrors.password = "La contraseña es requerida";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "La contraseña debe tener al menos 6 caracteres";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      await onFormSubmit(formData.email, formData.password);
+    } catch (error) {
+      setErrors({ password: "Credenciales incorrectas" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-md mx-auto">

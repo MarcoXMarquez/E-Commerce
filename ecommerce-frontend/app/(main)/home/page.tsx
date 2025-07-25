@@ -1,6 +1,9 @@
-import { ProductGrid } from "./product-grid"
-import { Button } from "@/components/button"
-import { ArrowRight, Truck, Shield, Headphones, Star } from "lucide-react"
+import { ProductGrid } from "./product-grid";
+import { Button } from "@/components/button";
+import { ArrowRight, Truck, Shield, Headphones, Star } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const testimonials = [
   {
@@ -27,12 +30,33 @@ const testimonials = [
     rating: 5,
     avatar: "/placeholder.svg?height=60&width=60",
   },
-]
+];
 
 export default function HomePage() {
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+
+  // Redirige si no está autenticado
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verificando tu sesión...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section with Animation */}
+      {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
@@ -43,7 +67,7 @@ export default function HomePage() {
                 <span className="block text-yellow-300 animate-pulse">Transforma tu Vida</span>
               </h1>
               <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-3xl mx-auto">
-                Descubre los productos más innovadores con envío gratuito y garantía extendida
+                Bienvenido de vuelta, {user.name}. Descubre los productos más innovadores
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animation-delay-300">
@@ -60,8 +84,9 @@ export default function HomePage() {
                 variant="ghost"
                 size="lg"
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20 transform hover:scale-105 transition-transform"
+                onClick={logout}
               >
-                Ver Ofertas
+                Cerrar Sesión
               </Button>
             </div>
           </div>
@@ -121,9 +146,11 @@ export default function HomePage() {
               >
                 <div className="flex items-center mb-4">
                   <img
-                    src={testimonial.avatar || "/placeholder.svg"}
+                    src={testimonial.avatar}
                     alt={testimonial.name}
                     className="w-12 h-12 rounded-full mr-4"
+                    width={60}
+                    height={60}
                   />
                   <div>
                     <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
@@ -144,26 +171,44 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Newsletter Section */}
-      <section className="bg-gradient-to-r from-gray-900 to-blue-900 text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Mantente al Día</h2>
-          <p className="text-xl text-gray-300 mb-8">
-            Suscríbete y recibe ofertas exclusivas, nuevos productos y descuentos especiales
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Tu email"
-              className="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-            />
-            <Button variant="secondary" size="lg" className="whitespace-nowrap">
-              Suscribirse
-            </Button>
+      {/* Newsletter Section (solo para usuarios regulares) */}
+      {user.role === 'user' && (
+        <section className="bg-gradient-to-r from-gray-900 to-blue-900 text-white py-16">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Mantente al Día</h2>
+            <p className="text-xl text-gray-300 mb-8">
+              Suscríbete y recibe ofertas exclusivas, nuevos productos y descuentos especiales
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+              <input
+                type="email"
+                placeholder="Tu email"
+                defaultValue={user.email}
+                className="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              />
+              <Button variant="secondary" size="lg" className="whitespace-nowrap">
+                Suscribirse
+              </Button>
+            </div>
+            <p className="text-sm text-gray-400 mt-4">No spam. Puedes cancelar en cualquier momento.</p>
           </div>
-          <p className="text-sm text-gray-400 mt-4">No spam. Puedes cancelar en cualquier momento.</p>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* Panel de admin (solo visible para administradores) */}
+      {user.role === 'admin' && (
+        <section className="bg-blue-50 border-t border-b border-blue-200 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center">
+              <Shield className="h-6 w-6 text-blue-600 mr-3" />
+              <h3 className="text-lg font-medium text-blue-800">Panel de Administrador</h3>
+              <Button variant="ghost" size="sm" className="ml-auto">
+                Ver Dashboard
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
-  )
+  );
 }

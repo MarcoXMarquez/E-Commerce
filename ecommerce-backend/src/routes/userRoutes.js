@@ -1,41 +1,21 @@
-// src/routes/userRoutes.js
-import express from "express";
-import { registerUser } from "../controllers/userController.js";
-import { findUserByEmail, comparePasswords } from "../models/User.js"; // Named import
-import jwt from "jsonwebtoken";
+import express from 'express';
+import { registerUser, loginUser, logoutUser } from '../controllers/userController.js';
+import { protect, adminProtect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.post("/", registerUser);
+router.post('/register', registerUser);
+router.post('/login', loginUser);
+router.post('/logout', logoutUser);
 
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+// Ejemplo de ruta protegida
+router.get('/profile', protect, (req, res) => {
+  res.json({ message: "Acceso a perfil autorizado", user: req.user });
+});
 
-  try {
-    const user = await findUserByEmail(email);
-    if (!user) return res.status(401).json({ message: "Usuario no encontrado" });
-
-    const isMatch = await comparePasswords(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: "Contraseña incorrecta" });
-
-    const token = jwt.sign(
-      { id: user.id, role: user.role },  // Usa user.id en lugar de user._id
-      process.env.JWT_SECRET || "secreto",
-      { expiresIn: "7d" }
-    );
-
-    res.json({ 
-      token, 
-      user: { 
-        id: user.id, 
-        name: user.name, 
-        email: user.email, 
-        role: user.role 
-      } 
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Error en el servidor" });
-  }
+// Ejemplo de ruta solo para admin
+router.get('/admin', protect, adminProtect, (req, res) => {
+  res.json({ message: "Panel de administrador" });
 });
 
 export default router;

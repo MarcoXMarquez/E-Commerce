@@ -1,18 +1,23 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, User, Chrome, Check, X } from "lucide-react"
 import { Button } from "@/components/button"
+import api from "@/lib/api"
+import { useRouter } from "next/navigation"
+import router from "next/router"
 
-interface PasswordStrength {
-  score: number
-  feedback: string[]
+interface RegisterFormProps {
+  onSubmit: (userData: {
+    name: string
+    email: string
+    password: string
+  }) => Promise<void>
+  onGoogleRegister?: () => void
 }
 
-export function RegisterForm() {
+export function RegisterForm({ onSubmit, onGoogleRegister }: RegisterFormProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -30,54 +35,16 @@ export function RegisterForm() {
     return emailRegex.test(email)
   }
 
-  const getPasswordStrength = (password: string): PasswordStrength => {
-    let score = 0
-    const feedback: string[] = []
-
-    if (password.length >= 8) score += 1
-    else feedback.push("Al menos 8 caracteres")
-
-    if (/[a-z]/.test(password)) score += 1
-    else feedback.push("Una letra minúscula")
-
-    if (/[A-Z]/.test(password)) score += 1
-    else feedback.push("Una letra mayúscula")
-
-    if (/\d/.test(password)) score += 1
-    else feedback.push("Un número")
-
-    if (/[^a-zA-Z\d]/.test(password)) score += 1
-    else feedback.push("Un carácter especial")
-
-    return { score, feedback }
-  }
-
-  const passwordStrength = getPasswordStrength(formData.password)
-
-  const getStrengthColor = (score: number) => {
-    if (score <= 2) return "bg-red-500"
-    if (score <= 3) return "bg-yellow-500"
-    if (score <= 4) return "bg-blue-500"
-    return "bg-green-500"
-  }
-
-  const getStrengthText = (score: number) => {
-    if (score <= 2) return "Débil"
-    if (score <= 3) return "Regular"
-    if (score <= 4) return "Buena"
-    return "Muy fuerte"
-  }
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }))
 
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }))
+      setErrors(prev => ({ ...prev, [name]: "" }))
     }
   }
 
@@ -85,7 +52,7 @@ export function RegisterForm() {
     e.preventDefault()
     setIsLoading(true)
 
-    // Validation
+    // Validación
     const newErrors: { [key: string]: string } = {}
 
     if (!formData.name.trim()) {
@@ -100,8 +67,8 @@ export function RegisterForm() {
 
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida"
-    } else if (passwordStrength.score < 3) {
-      newErrors.password = "La contraseña debe ser más fuerte"
+    } else if (formData.password.length < 8) {
+      newErrors.password = "La contraseña debe tener al menos 8 caracteres"
     }
 
     if (!formData.confirmPassword) {
@@ -120,21 +87,23 @@ export function RegisterForm() {
       return
     }
 
-    // Simulate API call
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      console.log("Registration successful:", formData)
-      // Redirect logic here
-    } catch (error) {
-      console.error("Registration failed:", error)
+      const response = await api.post('/users/register', {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password
+      });
+      
+      if (response.data) {
+        router.push('/dashboard');
+      }
+    } catch (error: any) {
+      setErrors({
+        submit: error.response?.data?.error || 'Error al registrar. Intenta nuevamente.'
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
-
-  const handleGoogleRegister = () => {
-    console.log("Google OAuth register")
-    // Google OAuth logic here
   }
 
   return (
@@ -142,8 +111,14 @@ export function RegisterForm() {
       <div className="bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Crear Cuenta</h1>
-          <p className="text-gray-600">Únete a nuestra comunidad</p>
+          <p className="text-gray-600">Únete como usuario</p>
         </div>
+
+        {errors.submit && (
+          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+            {errors.submit}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Name Field */}
@@ -216,25 +191,6 @@ export function RegisterForm() {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-
-            {/* Password Strength Meter */}
-            {formData.password && (
-              <div className="mt-2">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-300 ${getStrengthColor(passwordStrength.score)}`}
-                      style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-xs font-medium text-gray-600">{getStrengthText(passwordStrength.score)}</span>
-                </div>
-                {passwordStrength.feedback.length > 0 && (
-                  <div className="text-xs text-gray-500">Falta: {passwordStrength.feedback.join(", ")}</div>
-                )}
-              </div>
-            )}
-
             {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
           </div>
 
@@ -314,9 +270,18 @@ export function RegisterForm() {
         </div>
 
         {/* Google OAuth Button */}
-        <Button type="button" variant="ghost" size="lg" className="w-full" icon={Chrome} onClick={handleGoogleRegister}>
-          Continuar con Google
-        </Button>
+        {onGoogleRegister && (
+          <Button 
+            type="button" 
+            variant="ghost" 
+            size="lg" 
+            className="w-full" 
+            icon={Chrome} 
+            onClick={onGoogleRegister}
+          >
+            Continuar con Google
+          </Button>
+        )}
 
         {/* Login Link */}
         <p className="mt-8 text-center text-sm text-gray-600">

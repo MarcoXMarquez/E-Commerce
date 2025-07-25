@@ -1,33 +1,26 @@
-import jwt from "jsonwebtoken";
-import { findUserById } from "../models/User.js";
+import { verifyToken } from '../models/User.js';
 
-export const protect = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader?.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "No autorizado" });
+const protect = async (req, res, next) => {
+  const token = req.cookies.token;
+  
+  if (!token) {
+    return res.status(401).json({ message: "No autorizado, no hay token" });
   }
 
-  const token = authHeader.split(" ")[1];
-
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secreto");
-    req.user = await findUserById(decoded.id);
-    
-    if (!req.user) {
-      return res.status(401).json({ message: "Usuario no encontrado" });
-    }
-
+    const decoded = verifyToken(token);
+    req.user = { id: decoded.id, role: decoded.role };
     next();
   } catch (err) {
     res.status(401).json({ message: "Token inválido" });
   }
 };
 
-// Middleware para verificar roles (ejemplo: admin)
-export const adminProtect = async (req, res, next) => {
+const adminProtect = (req, res, next) => {
   if (req.user?.role !== 'admin') {
-    return res.status(403).json({ message: "Acceso denegado" });
+    return res.status(403).json({ message: "Acceso denegado. Se requiere rol de admin" });
   }
   next();
 };
+
+export { protect, adminProtect };

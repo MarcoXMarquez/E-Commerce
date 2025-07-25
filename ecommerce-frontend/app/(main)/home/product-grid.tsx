@@ -4,6 +4,8 @@ import { useState } from "react"
 import { ProductCard } from "@/components/product-card"
 import { Button } from "@/components/button"
 import { ChevronDown, Filter } from "lucide-react"
+import { useAuth } from "../../context/AuthContext"
+import { useRouter } from "next/navigation"
 
 const products = [
   {
@@ -84,6 +86,8 @@ export function ProductGrid() {
   const [selectedCategory, setSelectedCategory] = useState("Todos")
   const [selectedPriceRange, setSelectedPriceRange] = useState(priceRanges[0])
   const [showFilters, setShowFilters] = useState(false)
+  const { user } = useAuth()
+  const router = useRouter()
 
   const filteredProducts = products.filter((product) => {
     const categoryMatch = selectedCategory === "Todos" || product.category === selectedCategory
@@ -91,14 +95,35 @@ export function ProductGrid() {
     return categoryMatch && priceMatch
   })
 
+  const handleAddToCart = (productId: string) => {
+    if (!user) {
+      router.push('/login?redirect=/products')
+      return
+    }
+    // Lógica para añadir al carrito
+    console.log(`Producto ${productId} añadido al carrito por ${user?.email}`)
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Productos Destacados</h2>
-          <p className="text-gray-600">Descubre nuestra selección de productos premium</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            {user?.role === 'admin' ? 'Panel de Productos' : 'Productos Destacados'}
+          </h2>
+          <p className="text-gray-600">
+            {user?.role === 'admin' 
+              ? 'Administra tu catálogo de productos' 
+              : 'Descubre nuestra selección premium'}
+          </p>
         </div>
+
+        {user?.role === 'admin' && (
+          <Button variant="primary" size="sm" className="hidden md:flex">
+            Añadir Producto
+          </Button>
+        )}
 
         <Button
           variant="ghost"
@@ -158,8 +183,21 @@ export function ProductGrid() {
               </div>
             </div>
 
+            {/* Admin Actions (solo visible para admin) */}
+            {user?.role === 'admin' && (
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Acciones</h4>
+                <Button variant="ghost" size="sm" className="w-full mb-2">
+                  Exportar Catálogo
+                </Button>
+                <Button variant="ghost" size="sm" className="w-full">
+                  Ver Estadísticas
+                </Button>
+              </div>
+            )}
+
             {/* Results Count */}
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 mt-4">
               {filteredProducts.length} producto{filteredProducts.length !== 1 ? "s" : ""} encontrado
               {filteredProducts.length !== 1 ? "s" : ""}
             </div>
@@ -171,7 +209,11 @@ export function ProductGrid() {
           {filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredProducts.map((product) => (
-                <ProductCard key={product.id} {...product} />
+                <ProductCard 
+                  key={product.id} 
+                  {...product} 
+                  onAddToCart={() => handleAddToCart(product.id)}
+                />
               ))}
             </div>
           ) : (
