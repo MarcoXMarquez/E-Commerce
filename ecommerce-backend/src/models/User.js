@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
-const jwtSecret = process.env.JWT_SECRET
 
 // Hashea la contraseña antes de guardar (debes llamar a esta función manualmente)
 const hashPassword = async (password) => {
@@ -15,8 +14,10 @@ export const createUser = async (userData) => {
   const hashedPassword = await hashPassword(userData.password);
   return await prisma.user.create({
     data: {
-      ...userData,
-      password: hashedPassword
+      name: userData.name ?? "",
+      email: userData.email ?? "",
+      password: hashedPassword,
+      role: "user", // valor por defecto
     }
   });
 };
@@ -51,15 +52,20 @@ export const findUserById = async (id) => {
   });
 };
 // Nueva función para generar token JWT
-export const generateAuthToken = (userId, role) => {
-  return jwt.sign(
-    { id: userId, role },
-    jwtSecret,
-    { expiresIn: process.env.JWT_EXPIRES_IN }
-  );
+export const generateAuthToken = (id, role) => {
+  const payload = { id, role };
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret) {
+    throw new Error('JWT_SECRET no está definido');
+  }
+
+  return jwt.sign(payload, secret, { expiresIn: '7d' });
 };
 
 // Nueva función para verificar token
 export const verifyToken = (token) => {
-  return jwt.verify(token, jwtSecret);
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET no está definido');
+  return jwt.verify(token, secret);
 };

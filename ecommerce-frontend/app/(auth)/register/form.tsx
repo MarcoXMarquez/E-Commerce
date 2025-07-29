@@ -6,8 +6,6 @@ import { Eye, EyeOff, Mail, Lock, User, Chrome, Check, X } from "lucide-react"
 import { Button } from "@/components/button"
 import api from "@/lib/api"
 import { useRouter } from "next/navigation"
-import router from "next/router"
-
 interface RegisterFormProps {
   onSubmit: (userData: {
     name: string
@@ -18,6 +16,8 @@ interface RegisterFormProps {
 }
 
 export function RegisterForm({ onSubmit, onGoogleRegister }: RegisterFormProps) {
+  const router = useRouter()
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -99,7 +99,7 @@ export function RegisterForm({ onSubmit, onGoogleRegister }: RegisterFormProps) 
       }
     } catch (error: any) {
       setErrors({
-        submit: error.response?.data?.error || 'Error al registrar. Intenta nuevamente.'
+    submit: error.response?.data?.error || error.message || 'Error al registrar. Intenta nuevamente.'
       });
     } finally {
       setIsLoading(false);

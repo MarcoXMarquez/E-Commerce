@@ -1,34 +1,25 @@
 import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
-import productRoutes from './routes/productRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
 const app = express();
 
-// Configuración CORS mejorada
-const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  exposedHeaders: ['Set-Cookie']
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Habilitar pre-flight para todas las rutas
-
-app.use(cookieParser());
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-// Routes
-app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor en puerto ${PORT}`);
+  console.log(`Servidor en http://localhost:${PORT}`);
 });
+console.log('JWT_SECRET:', process.env.JWT_SECRET);

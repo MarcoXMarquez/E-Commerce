@@ -15,16 +15,15 @@ const registerUser = async (req, res) => {
     }
 
     const user = await createUser({ name, email, password });
+    console.log('Usuario creado:', user);
     
-    // Generar token
     const token = generateAuthToken(user.id, user.role);
     
-    // Configurar cookie segura
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     res.status(201).json({
@@ -34,9 +33,11 @@ const registerUser = async (req, res) => {
       role: user.role
     });
   } catch (error) {
+    console.error('Error en registerUser:', error);
     res.status(500).json({ error: "Error al registrar usuario" });
   }
 };
+
 
 const loginUser = async (req, res) => {
   try {
